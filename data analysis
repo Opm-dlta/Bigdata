@@ -1,0 +1,86 @@
+# Import required libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.feature_selection import SelectKBest, f_classif
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Step 1: Load the Pima Indians Diabetes dataset
+# Replace 'diabetes.csv' with the correct path if necessary.
+data = pd.read_csv("C:/Users/Lunga/Desktop/datasets/diabetes.csv")
+print("First 5 rows of the dataset:")
+print(data.head())
+
+# Check for removable values
+print("\nMissing values in each column:")
+print(data.isnull().sum())
+
+# Handle removed values if any
+if data.isnull().sum().sum() > 0:
+    data = data.dropna()
+
+# Step 2: Separate the features and target variable
+X = data.drop("Outcome", axis=1)  # Predictor features
+y = data["Outcome"]               # Target variable (diabetes outcome)
+
+# Step 3: Standardize the features for consistent scaling
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Step 4: Feature Selection using SelectKBest
+# For this example, we'll select the top 4 features using the ANOVA F-value
+selector = SelectKBest(score_func=f_classif, k=4)
+X_selected = selector.fit_transform(X_scaled, y)
+selected_features = X.columns[selector.get_support()]
+print("\nSelected Features based on ANOVA F-value:")
+print(list(selected_features))
+
+# Step 5: Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=0.2, random_state=42)
+
+# Step 6: Build and train two machine learning models
+
+# Model 1: Logistic Regression
+lr = LogisticRegression(random_state=42)
+lr.fit(X_train, y_train)
+y_pred_lr = lr.predict(X_test)
+
+# Evaluate Logistic Regression
+accuracy_lr = accuracy_score(y_test, y_pred_lr)
+print("\nLogistic Regression Accuracy:", accuracy_lr)
+print("Classification Report for Logistic Regression:\n", classification_report(y_test, y_pred_lr))
+
+# Model 2: Decision Tree Classifier
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train, y_train)
+y_pred_dt = dt.predict(X_test)
+
+# Evaluate Decision Tree Classifier
+accuracy_dt = accuracy_score(y_test, y_pred_dt)
+print("\nDecision Tree Accuracy:", accuracy_dt)
+print("Classification Report for Decision Tree:\n", classification_report(y_test, y_pred_dt))
+
+# Step 7: Visualize the performance using confusion matrices
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+# Confusion matrix for Logistic Regression
+cm_lr = confusion_matrix(y_test, y_pred_lr)
+sns.heatmap(cm_lr, annot=True, fmt='d', ax=axes[0], cmap='Blues')
+axes[0].set_title("Logistic Regression Confusion Matrix")
+axes[0].set_xlabel("Predicted Labels")
+axes[0].set_ylabel("True Labels")
+
+# Confusion matrix for Decision Tree
+cm_dt = confusion_matrix(y_test, y_pred_dt)
+sns.heatmap(cm_dt, annot=True, fmt='d', ax=axes[1], cmap='Greens')
+axes[1].set_title("Decision Tree Confusion Matrix")
+axes[1].set_xlabel("Predicted Labels")
+axes[1].set_ylabel("True Labels")
+
+plt.tight_layout()
+plt.show()
